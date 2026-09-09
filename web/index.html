@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure Web Auth Template</title>
+    <link rel="stylesheet" href="./css/main.css" />
+  </head>
+  <body>
+    <div class="page">
+      <div class="app">
+        <aside class="panel sidebar">
+          <div class="repo-meta">
+            <span class="meta-tag">Repository</span>
+            <span class="meta-tag">Template</span>
+          </div>
+
+          <h1>Secure Web Auth Template</h1>
+          <p>
+            Lightweight template for a secure browser-based authentication flow with Go on the backend and HTML, CSS, and JavaScript in the frontend.
+          </p>
+
+          <div class="tech-row">
+            <span class="tech-pill">Go</span>
+            <span class="tech-pill">HTML</span>
+            <span class="tech-pill">CSS</span>
+            <span class="tech-pill">JavaScript</span>
+          </div>
+
+          <div class="status-box">
+            <h2>Session state</h2>
+            <span id="sessionStatus" class="status-pill out">logged out</span>
+          </div>
+        </aside>
+
+        <main class="panel main">
+          <div class="tabs">
+            <button class="tab-button active" data-tab="register">Register</button>
+            <button class="tab-button" data-tab="login">Login</button>
+            <button class="tab-button" data-tab="protected">Protected</button>
+          </div>
+
+          <section id="registerTab" class="tab-panel">
+            <form id="registerForm">
+              <label>
+                Username
+                <input type="text" name="username" placeholder="testuser123" required />
+              </label>
+              <label>
+                Password
+                <input type="password" name="password" placeholder="secret123" required />
+              </label>
+              <div class="row">
+                <button class="btn btn-primary" type="submit">Register</button>
+              </div>
+            </form>
+          </section>
+
+          <section id="loginTab" class="tab-panel hidden">
+            <form id="loginForm">
+              <label>
+                Username
+                <input type="text" name="username" placeholder="testuser123" required />
+              </label>
+              <label>
+                Password
+                <input type="password" name="password" placeholder="secret123" required />
+              </label>
+              <div class="row">
+                <button class="btn btn-primary" type="submit">Login</button>
+                <button id="logoutButton" class="btn btn-danger" type="button">Logout</button>
+              </div>
+            </form>
+          </section>
+
+          <section id="protectedTab" class="tab-panel hidden">
+            <form id="protectedForm">
+              <label>
+                Username
+                <input type="text" name="username" placeholder="testuser123" required />
+              </label>
+              <label>
+                CSRF token (browser-managed)
+                <input type="text" id="csrfTokenInput" readonly placeholder="will be read from cookie automatically" />
+              </label>
+              <div class="row">
+                <button class="btn btn-primary" type="submit">Access protected route</button>
+              </div>
+            </form>
+          </section>
+
+          <div id="responseBox" class="response">No request made yet.</div>
+        </main>
+      </div>
+    </div>
+
+    <script src="./js/main.js"></script>
+  </body>
+</html>
