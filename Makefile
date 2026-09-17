@@ -6,7 +6,7 @@ BUILD_DIR := dist
 COVERAGE_DIR := coverage
 PLATFORMS := windows/amd64 windows/arm64 darwin/amd64 darwin/arm64
 
-.PHONY: help run build zip cross release lint test cover deps tidy clean format fix
+.PHONY: help run build zip cross release lint test cover deps tidy clean format fix famous
 
 help: ## Show available commands
 	@echo "Available commands:"
@@ -64,3 +64,5 @@ format: ## Format the file (LF instead of CRLF) using gofmt
 
 fix: ## Fix updates code to use the latest APIs and go idioms
 	go fix ./...
+
+famous: tidy deps tidy format fix ## Run all common maintenance tasks
