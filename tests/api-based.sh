@@ -44,7 +44,7 @@ curl --request POST \
      --include \
      --url "$baseURL$endpoint" \
      --data-urlencode "username=testuser123" \
-     --header "X-CSRF-Token: $csrfToken" \
+     --header "X-Csrf-Token: $csrfToken" \
      --cookie "$cookieJar"
 
 echo -e "\n==> Logout the user"
@@ -53,7 +53,7 @@ curl --request POST \
      --include \
      --url "$baseURL$endpoint" \
      --data-urlencode "username=testuser123" \
-     --header "X-CSRF-Token: $csrfToken" \
+     --header "X-Csrf-Token: $csrfToken" \
      --cookie "$cookieJar"
 
 rm -f "$cookieJar"

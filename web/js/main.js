@@ -108,7 +108,7 @@ document.getElementById('logoutButton').addEventListener('click', async () => {
   try {
     const response = await fetch('/v1/logout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': csrfToken },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Csrf-Token': csrfToken },
       body: new URLSearchParams({ username }).toString(),
       credentials: 'same-origin',
     });
@@ -133,7 +133,7 @@ document.getElementById('protectedForm').addEventListener('submit', async (event
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRF-Token': csrfToken,
+        'X-Csrf-Token': csrfToken,
       },
       body: new URLSearchParams({ username }).toString(),
       credentials: 'same-origin',

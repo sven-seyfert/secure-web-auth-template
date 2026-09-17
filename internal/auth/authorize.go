@@ -23,7 +23,7 @@ func Authorize(req *http.Request) error {
 		return ErrUnauthorized
 	}
 
-	csrfToken := req.Header.Get("X-CSRF-Token")
+	csrfToken := req.Header.Get("X-Csrf-Token")
 	if csrfToken == "" || csrfToken != user.CSRFToken {
 		return ErrUnauthorized
 	}

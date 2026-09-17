@@ -22,7 +22,7 @@ func TestAuthorizeAcceptsValidSessionAndCSRF(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/protected", strings.NewReader("username=alice1234"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("X-CSRF-Token", "csrf-token")
+	req.Header.Set("X-Csrf-Token", "csrf-token")
 	req.AddCookie(&http.Cookie{Name: "session_token", Value: "session-token"})
 
 	if err := Authorize(req); err != nil {
@@ -34,7 +34,7 @@ func TestAuthorizeRejectsMissingUser(t *testing.T) {
 	resetUsers()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/protected", strings.NewReader("username=missing-user"))
-	req.Header.Set("X-CSRF-Token", "csrf-token")
+	req.Header.Set("X-Csrf-Token", "csrf-token")
 	req.AddCookie(&http.Cookie{Name: "session_token", Value: "session-token"})
 
 	if err := Authorize(req); err == nil {
@@ -56,13 +56,13 @@ func TestAuthorizeRejectsInvalidSessionOrCSRF(t *testing.T) {
 		{
 			name: "missing session cookie",
 			prepare: func(req *http.Request) {
-				req.Header.Set("X-CSRF-Token", "csrf-token")
+				req.Header.Set("X-Csrf-Token", "csrf-token")
 			},
 		},
 		{
 			name: "invalid session value",
 			prepare: func(req *http.Request) {
-				req.Header.Set("X-CSRF-Token", "csrf-token")
+				req.Header.Set("X-Csrf-Token", "csrf-token")
 				req.AddCookie(&http.Cookie{Name: "session_token", Value: "wrong-session"})
 			},
 		},
@@ -76,7 +76,7 @@ func TestAuthorizeRejectsInvalidSessionOrCSRF(t *testing.T) {
 			name: "invalid CSRF value",
 			prepare: func(req *http.Request) {
 				req.AddCookie(&http.Cookie{Name: "session_token", Value: "session-token"})
-				req.Header.Set("X-CSRF-Token", "wrong-csrf")
+				req.Header.Set("X-Csrf-Token", "wrong-csrf")
 			},
 		},
 	}

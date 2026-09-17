@@ -143,7 +143,7 @@ func TestHandleLoginRejectsAlreadyLoggedInUser(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/login", strings.NewReader("username=alice1234&password=supersecret"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("X-CSRF-Token", "existing-csrf")
+	req.Header.Set("X-Csrf-Token", "existing-csrf")
 	req.AddCookie(&http.Cookie{Name: "session_token", Value: "existing-session"})
 	resp := httptest.NewRecorder()
 
@@ -170,7 +170,7 @@ func TestRequireAuthJSONAllowsProtectedRouteWithValidSession(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/protected", strings.NewReader("username=alice1234"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("X-CSRF-Token", "csrf-token")
+	req.Header.Set("X-Csrf-Token", "csrf-token")
 	req.AddCookie(&http.Cookie{Name: "session_token", Value: "session-token"})
 	resp := httptest.NewRecorder()
 
@@ -190,7 +190,7 @@ func TestRequireAuthJSONRejectsUnauthorizedUsers(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/protected", strings.NewReader("username=alice1234"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("X-CSRF-Token", "wrong-csrf")
+	req.Header.Set("X-Csrf-Token", "wrong-csrf")
 	req.AddCookie(&http.Cookie{Name: "session_token", Value: "session-token"})
 	resp := httptest.NewRecorder()
 
@@ -211,7 +211,7 @@ func TestHandleLogoutClearsSessionState(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/logout", strings.NewReader("username=alice1234"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("X-CSRF-Token", "csrf-token")
+	req.Header.Set("X-Csrf-Token", "csrf-token")
 	req.AddCookie(&http.Cookie{Name: "session_token", Value: "session-token"})
 	resp := httptest.NewRecorder()
 
