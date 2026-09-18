@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -11,6 +11,8 @@ import (
 	"github.com/sven-seyfert/secure-web-auth-template/internal/store"
 	"github.com/sven-seyfert/secure-web-auth-template/internal/utils"
 )
+
+var logger = slog.New(slog.NewTextHandler(os.Stderr, nil)) //nolint:gochecknoglobals
 
 // RegisterRoutes registers all API routes on the provided mux.
 func RegisterRoutes(mux *http.ServeMux) {
@@ -86,7 +88,7 @@ func writeJSON(writer http.ResponseWriter, statusCode int, payload any) {
 	writer.WriteHeader(statusCode)
 
 	if err := json.NewEncoder(writer).Encode(payload); err != nil {
-		log.Printf("encode JSON response: %v", err)
+		logger.Error("encode JSON response", "error", err)
 	}
 }
 
@@ -135,7 +137,7 @@ func handleRegister(writer http.ResponseWriter, req *http.Request) {
 
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
-		log.Printf("hash password error: %v", err)
+		logger.ErrorContext(req.Context(), "hash password error", "error", err)
 		writeErrorJSON(writer, http.StatusInternalServerError, "could not create user")
 		return
 	}
@@ -178,8 +180,9 @@ func handleLogin(writer http.ResponseWriter, req *http.Request) {
 
 	sessionToken, csrfToken, err := auth.IssueSessionTokens()
 	if err != nil {
-		log.Printf("create login tokens error: %v", err)
+		logger.ErrorContext(req.Context(), "create login tokens error", "error", err)
 		writeErrorJSON(writer, http.StatusInternalServerError, "could not create session")
+
 		return
 	}
 
