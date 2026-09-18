@@ -126,8 +126,19 @@ func handleRegister(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	store.Users[username] = store.User{
+	if err := storage.CreateUser(storage.User{
+		Username:       username,
 		HashedPassword: hashedPassword,
+	}); err != nil {
+		if errors.Is(err, storage.ErrUserExists) {
+			writeErrorJSON(writer, http.StatusConflict, "user already exists")
+			return
+		}
+
+		logger.ErrorContext(req.Context(), "create user error", "error", err)
+		writeErrorJSON(writer, http.StatusInternalServerError, "could not create user")
+
+		return
 	}
 
 	writeJSON(writer, http.StatusOK, map[string]string{
@@ -146,6 +157,14 @@ func handleLogin(writer http.ResponseWriter, req *http.Request) {
 
 	if err := utils.ValidateCredentials(username, password); err != nil {
 		writeErrorJSON(writer, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user, exists, err := storage.GetUser(username)
+	if err != nil {
+		logger.ErrorContext(req.Context(), "read user error", "error", err)
+		writeErrorJSON(writer, http.StatusInternalServerError, "could not validate credentials")
+
 		return
 	}
 
@@ -212,6 +231,13 @@ func handleLogout(writer http.ResponseWriter, req *http.Request) {
 
 	if err := utils.ValidateUsername(username, utils.MinCredentialLength); err != nil {
 		writeErrorJSON(writer, http.StatusUnauthorized, auth.ErrUnauthorized.Error())
+		return
+	}
+
+	user, exists, err := storage.GetUser(username)
+	if err != nil {
+		logger.ErrorContext(req.Context(), "check user for logout error", "error", err)
+		writeErrorJSON(writer, http.StatusInternalServerError, "could not clear session")
 		return
 	}
 
