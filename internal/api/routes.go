@@ -2,13 +2,16 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/sven-seyfert/secure-web-auth-template/internal/auth"
-	"github.com/sven-seyfert/secure-web-auth-template/internal/store"
+	"github.com/sven-seyfert/secure-web-auth-template/internal/storage"
 	"github.com/sven-seyfert/secure-web-auth-template/internal/utils"
 )
 
@@ -55,7 +58,7 @@ func requirePostMethod(nextHandler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		nextHandler(writer, req)
-}
+	}
 }
 
 // requireAuthJSON ensures the request is authenticated before calling the next handler.
@@ -142,7 +145,7 @@ func handleRegister(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	writeJSON(writer, http.StatusOK, map[string]string{
-		"message": fmt.Sprintf("User %q registered successfully.", username),
+		"message": fmt.Sprintf("User %q registered successfully.", username), //nolint:goconst
 	})
 }
 
@@ -225,8 +228,6 @@ func handleProtected(writer http.ResponseWriter, req *http.Request) {
 
 // handleLogout clears the active session cookies and resets the stored session data.
 func handleLogout(writer http.ResponseWriter, req *http.Request) {
-	auth.ClearSessionCookies(writer)
-
 	username := strings.TrimSpace(req.FormValue("username"))
 
 	if err := utils.ValidateUsername(username, utils.MinCredentialLength); err != nil {
