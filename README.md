@@ -17,106 +17,138 @@
 
 ## Description
 
-A lightweight starter repository for building secure web authentication flows with a Go backend and a browser-based frontend using HTML, CSS, and JavaScript.
+This project is a compact template for a secure web authentication flow built with Go on the backend and HTML, CSS, and JavaScript on the frontend. It demonstrates the core pieces of a small auth system: registration, login, session handling, CSRF protection, protected actions, and logout.
 
-This project is designed as a reusable template for simple login, registration, session handling, and CSRF-protected requests in small web applications. It keeps the structure intentionally compact and easy to understand so it can be adapted quickly for new projects or internal prototypes.
+The implementation is intentionally compact and easy to read so it can be used as a starting point for internal tools, demos, prototypes, and learning projects. It is not a full identity platform, but it does include the important mechanics of a functional, browser-based authentication flow.
 
-### Why this template exists
+### Typical use cases
 
-When a project needs a small, secure authentication baseline without the overhead of a large framework, this repository provides a practical starting point.
+This repository is a good fit for:
 
-It focuses on the core patterns that matter most for a lightweight web auth flow:
-
-- user registration and login
-- session-based authentication with cookies
-- CSRF protection for protected actions
-- simple backend route structure
-- browser UI that demonstrates the flow clearly
-
-This is not meant to replace a full production auth system, but it is useful as a secure starting point for small apps, prototypes, internal tools, or secure demo environments.
+- internal admin or staff authentication
+- small SaaS prototypes
+- demo applications with browser-based auth
+- secure learning examples for Go web security
+- backend starter projects that need an understandable auth baseline
 
 ## Features
 
-- Go HTTP server with route-based API design
-- Cookie-based session handling
-- Single active session per user by design
-- CSRF token validation for protected requests
-- Browser UI with login, register, logout, and protected action flows
-- Minimal project layout optimized for readability and reuse
-- Easy local testing and extension
+- registration and login flow with form validation
+- username validation with a strict rule set
+- password validation with a minimum length
+- bcrypt password hashing before persistence
+- SQLite-backed user storage with parameterized SQL queries
+- random session token and CSRF token generation per login
+- session expiry and CSRF expiry checks for protected routes
+- browser-side cookie handling for session state and CSRF token management
+- protected endpoint requiring both a valid session and a valid CSRF header
+- logout flow that clears session cookies and resets stored auth data
+- secure HTTP headers applied for all responses
+- graceful shutdown and request timeout configuration
 
 ## Getting started
 
 1. Run the app:
 
 ```bash
-# run by go
+# run with Go
 go run main.go
 
-# run by Makefile
+# or using the Makefile
 make run
 ```
 
-2. Optional: Build the app instead of running:
+2. Optional: build the binary instead of running directly:
 
 ```bash
-# run by go
+# build with Go
 go build -o secure-web-auth-template.exe main.go
 
-# run by Makefile
+# or using the Makefile
 make build
 ```
 
-3. Open the application in the browser:
+3. Open the app in a browser:
 
 ```text
 http://localhost:8080
 ```
 
-4. Use the register and login forms to test the flow and review how the session and CSRF cookies are handled.
+4. Use the UI to register a user, log in, access the protected route, and log out again.
 
 > [!TIP]
 > Check out the other Makefile commands (options).
 
-### Typical use cases
-
-This repository is useful when you want a clean, compact, and understandable baseline for:
-
-- internal admin authentication
-- small SaaS prototypes
-- secure demo applications
-- browser-based auth experiments
-- Go + frontend starter projects
-
 ## Authentication flow
 
-The default flow included in this template is intentionally simple and educational:
+The full flow in this template is intentionally simple, explicit and educational:
 
-- register a user
-- log in with valid credentials
-- receive session and CSRF cookies
-- call a protected endpoint with the CSRF token in the request header
-- log out and clear session state
+1. submit a registration form with a username and password
+2. validate the username and password on the server
+3. hash the password using bcrypt and store the user record in SQLite
+4. log in with the same credentials
+5. create a new session token and CSRF token pair
+6. store the tokens in secure cookies and in the database
+7. send the CSRF token in the `X-Csrf-Token` header for protected actions
+8. call the protected endpoint only when the session and CSRF values are still valid
+9. log out to clear the session values and cookies
 
 ### Session model
 
-This template intentionally uses a single active session per user. The backend stores one session token and one CSRF token for each user account, and a second login attempt while a valid session already exists is rejected with a conflict response.
-
-This is a deliberate lightweight design choice for a small secure auth starter. It keeps the implementation easy to understand, predictable, and safer to reason about for a template or prototype. It is not meant to represent a multi-session product design with device-level session management.
+- each user can have only one active session at a time by design
+- a second login while a session is still valid is rejected
+- if the stored session has expired, the auth flow returns a specific session-expired error
+- if the CSRF token has expired, the auth flow returns a specific CSRF-expired error
+- protected actions require POST requests and a valid CSRF header
 
 ## Security notes
 
-This repository is intended as a learning and template-focused implementation. It demonstrates common secure web patterns, but it should still be treated as a starting point rather than a production-ready security system.
+This project is not a production identity system, but it already includes several relevant hardening measures.
 
-For real-world use, additional hardening is recommended:
+### Implemented protections
 
-- enforce HTTPS in production
-- use a persistent database instead of in-memory storage
-- rotate and invalidate session identifiers properly
-- add rate limiting and lockout protection
-- validate and sanitize all input
-- add logging, monitoring, and audit controls
-- review CSRF, session handling, and cookie settings for your deployment environment
+- bcrypt password hashing
+- strict username validation for length and allowed characters
+- minimum password length validation
+- parameterized SQL queries for SQLite access
+- random session and CSRF tokens generated for each login
+- session and CSRF expiration checks before access is granted
+- secure cookie settings including `HttpOnly`, `Secure`, and `SameSite=Lax`
+- CSRF enforcement by comparing the request header `X-Csrf-Token` against the stored value
+- restrictive browser security headers:
+  - `Content-Security-Policy`
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy` restricting camera, microphone, and geolocation access
+- frontend validation aligned with the server-side rules to prevent obvious invalid input before it is submitted
+- DOM output uses safe text insertion instead of rendering untrusted HTML directly
+- HTTP server timeouts and graceful shutdown handling
+
+### Validation policy
+
+The username rule is intentionally narrow and explicit:
+
+- minimum length: 8
+- maximum length: 32
+- allowed characters: letters, numbers, `.`, `_`, `-`
+- first character must be alphanumeric
+
+The password rule is intentionally simple and safe:
+
+- minimum length: 8
+- no trimming of leading or trailing spaces before hashing, because those characters are part of the actual password value
+
+### Remaining production considerations (production-grade readiness)
+
+This template is a strong starting point for learning and internal use, but it still needs additional hardening before being treated as a production-grade identity system. The following items are still important in a real deployment:
+
+- TLS termination via HTTPS or a trusted reverse proxy
+- rate limiting and brute-force protection
+- account lockout or suspicious-login monitoring
+- audit logging and operational observability
+- network-level controls and secure hosting configuration
+- secure deployment of cookies and session policies in the real environment
 
 ## License
 
@@ -133,7 +165,7 @@ Distributed under the MIT License. See [LICENSE](https://github.com/sven-seyfert
   - [golang](https://github.com/golang/go) by the Go team at Google; License: [BSD-3-Clause](https://github.com/golang/go/blob/master/LICENSE)
   - [cURL](https://github.com/curl/curl) by Daniel Stenberg; License: [MIT](lib/curl-license.txt)
   - [SQLite](https://www.sqlite.org/copyright.html) by Richard Hipp; License: [Public Domain](https://www.sqlite.org/copyright.html)
-  - [go-sqlite](https://github.com/zombiezen/go-sqlite) by Roxy Light; License: [ISC](https://github.com/zombiezen/go-sqlite/blob/main/LICENSE)
+  - [modernc.org/sqlite](https://gitlab.com/cznic/sqlite) by cznic; License: [BSD-3-Clause](https://gitlab.com/cznic/sqlite/-/blob/master/LICENSE)
 
 ##
 
