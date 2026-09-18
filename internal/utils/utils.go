@@ -8,7 +8,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// HashPassword returns a bcrypt hash for the given plaintext password.
+// ProjectRoot returns the repository root based on the location of this file.
+func ProjectRoot() string {
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		return "."
+	}
+
+	return filepath.Dir(filepath.Dir(filepath.Dir(currentFile)))
+}
+
+// HashPassword returns a bcrypt hash for the provided plaintext password.
 func HashPassword(password string) (string, error) {
 	if password == "" {
 		return "", fmt.Errorf("password must not be empty")
