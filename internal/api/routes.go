@@ -70,18 +70,6 @@ func requireAuthJSON(nextHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// requireMethod ensures the request uses the expected HTTP method before calling the next handler.
-func requireMethod(expectedMethod string, nextHandler http.HandlerFunc) http.HandlerFunc {
-	return func(responseWriter http.ResponseWriter, request *http.Request) {
-		if request.Method != expectedMethod {
-			writeErrorJSON(responseWriter, http.StatusMethodNotAllowed, "invalid request method")
-			return
-		}
-
-		nextHandler(responseWriter, request)
-	}
-}
-
 // writeJSON encodes a payload as JSON and writes it to the response.
 func writeJSON(writer http.ResponseWriter, statusCode int, payload any) {
 	writer.Header().Set("Content-Type", "application/json")
