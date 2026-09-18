@@ -8,6 +8,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var usernamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+
 // ProjectRoot returns the repository root based on the location of this file.
 func ProjectRoot() string {
 	_, currentFile, _, ok := runtime.Caller(0)
@@ -38,7 +40,54 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-// GenerateToken generates a cryptographically random token with the requested length.
+// ValidateUsername ensures the username satisfies the app's safe input policy.
+func ValidateUsername(username string, minLength int) error {
+	trimmedUsername := strings.TrimSpace(username)
+	if trimmedUsername == "" {
+		return errors.New("username is required")
+	}
+
+	if len(trimmedUsername) < minLength {
+		return fmt.Errorf("username must be at least %d characters long", minLength)
+	}
+
+	if len(trimmedUsername) > MaxUsernameLength {
+		return fmt.Errorf("username must be at most %d characters long", MaxUsernameLength)
+	}
+
+	if !usernamePattern.MatchString(trimmedUsername) {
+		return errors.New("username contains unsupported characters")
+	}
+
+	return nil
+}
+
+// ValidatePassword ensures the password satisfies the app's minimum length policy.
+func ValidatePassword(password string, minLength int) error {
+	if password == "" {
+		return errors.New("password is required")
+	}
+
+	if len(password) < minLength {
+		return fmt.Errorf("password must be at least %d characters long", minLength)
+	}
+
+	return nil
+}
+
+// ValidateCredentials validates the username and password using the shared credential policy.
+func ValidateCredentials(username, password string) error {
+	if err := ValidateUsername(username, MinCredentialLength); err != nil {
+		return err
+	}
+
+	if err := ValidatePassword(password, MinCredentialLength); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GenerateToken(length int) (string, error) {
 	if length <= 0 {
 		return "", fmt.Errorf("token length must be greater than zero")

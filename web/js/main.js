@@ -2,9 +2,34 @@ const responseBox = document.getElementById('responseBox');
 const sessionStatus = document.getElementById('sessionStatus');
 const csrfTokenInput = document.getElementById('csrfTokenInput');
 
+const MIN_CREDENTIAL_LENGTH = 8;
+const MAX_USERNAME_LENGTH = 32;
+const USERNAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
 const appState = {
   loggedIn: false,
+  username: '',
 };
+
+function validateUsername(username) {
+  const trimmed = (username || '').trim();
+
+  if (!trimmed) return 'username is required';
+  if (trimmed.length < MIN_CREDENTIAL_LENGTH) return `username must be at least ${MIN_CREDENTIAL_LENGTH} characters long`;
+  if (trimmed.length > MAX_USERNAME_LENGTH) return `username must be at most ${MAX_USERNAME_LENGTH} characters long`;
+  if (!USERNAME_PATTERN.test(trimmed)) return 'username contains unsupported characters';
+
+  return '';
+}
+
+function validatePassword(password) {
+  const value = password || '';
+
+  if (!value) return 'password is required';
+  if (value.length < MIN_CREDENTIAL_LENGTH) return `password must be at least ${MIN_CREDENTIAL_LENGTH} characters long`;
+
+  return '';
+}
 
 function setResponse(message, type = 'info') {
   responseBox.className = 'response';
@@ -56,6 +81,21 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
   event.preventDefault();
 
   const formData = new FormData(event.target);
+  const username = (formData.get('username') || '').toString();
+  const password = (formData.get('password') || '').toString();
+
+  const usernameError = validateUsername(username);
+  if (usernameError) {
+    setResponse(usernameError, 'error');
+    return;
+  }
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    setResponse(passwordError, 'error');
+    return;
+  }
+
   const body = new URLSearchParams(formData).toString();
 
   try {
@@ -82,6 +122,21 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
   }
 
   const formData = new FormData(event.target);
+  const username = (formData.get('username') || '').toString();
+  const password = (formData.get('password') || '').toString();
+
+  const usernameError = validateUsername(username);
+  if (usernameError) {
+    setResponse(usernameError, 'error');
+    return;
+  }
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    setResponse(passwordError, 'error');
+    return;
+  }
+
   const body = new URLSearchParams(formData).toString();
 
   try {

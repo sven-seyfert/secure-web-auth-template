@@ -126,13 +126,8 @@ func handleRegister(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if len(username) < 8 || len(password) < 8 {
-		writeErrorJSON(writer, http.StatusBadRequest, "username and password must be at least 8 characters long")
-		return
-	}
-
-	if _, exists := store.Users[username]; exists {
-		writeErrorJSON(writer, http.StatusConflict, "user already exists")
+	if err := utils.ValidateCredentials(username, password); err != nil {
+		writeErrorJSON(writer, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -161,7 +156,11 @@ func handleLogin(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, exists := store.Users[username]
+	if err := utils.ValidateCredentials(username, password); err != nil {
+		writeErrorJSON(writer, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	if !exists {
 		writeErrorJSON(writer, http.StatusUnauthorized, "invalid username or password")
 		return
@@ -202,6 +201,11 @@ func handleLogin(writer http.ResponseWriter, req *http.Request) {
 func handleProtected(writer http.ResponseWriter, req *http.Request) {
 	username := strings.TrimSpace(req.FormValue("username"))
 
+	if err := utils.ValidateUsername(username, utils.MinCredentialLength); err != nil {
+		writeErrorJSON(writer, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	writeJSON(writer, http.StatusOK, map[string]string{
 		"message": fmt.Sprintf("CSRF validation successful. Welcome, %q.", username),
 	})
@@ -212,7 +216,12 @@ func handleLogout(writer http.ResponseWriter, req *http.Request) {
 	auth.ClearSessionCookies(writer)
 
 	username := strings.TrimSpace(req.FormValue("username"))
-	user, exists := store.Users[username]
+
+	if err := utils.ValidateUsername(username, utils.MinCredentialLength); err != nil {
+		writeErrorJSON(writer, http.StatusUnauthorized, auth.ErrUnauthorized.Error())
+		return
+	}
+
 	if !exists {
 		writeErrorJSON(writer, http.StatusNotFound, "user not found")
 		return
