@@ -18,8 +18,14 @@ func Authorize(req *http.Request) error {
 		return ErrUnauthorized
 	}
 
-	sessionCookie, err := req.Cookie("session_token")
-	if err != nil || sessionCookie.Value == "" || sessionCookie.Value != user.SessionToken {
+	if user.IsSessionExpired() {
+		return ErrSessionExpired
+	}
+
+	sessionCookie, err := req.Cookie(SessionCookieName(username))
+	if err != nil || strings.TrimSpace(sessionCookie.Value) == "" {
+		return ErrUnauthorized
+	}
 		return ErrUnauthorized
 	}
 

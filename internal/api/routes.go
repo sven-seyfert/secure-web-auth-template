@@ -186,11 +186,16 @@ func handleLogin(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	auth.SetSessionCookies(writer, sessionToken, csrfToken)
+	auth.SetSessionCookies(writer, username, sessionToken, csrfToken)
 
-	user.SessionToken = sessionToken
-	user.CSRFToken = csrfToken
-	store.Users[username] = user
+	expiresAt := time.Now().Add(utils.SessionTimeout).In(time.Local).Truncate(time.Second)
+
+	if err := storage.SetSession(username, sessionToken, csrfToken, expiresAt, expiresAt); err != nil {
+		logger.ErrorContext(req.Context(), "store session tokens error", "error", err)
+		writeErrorJSON(writer, http.StatusInternalServerError, "could not create session")
+
+		return
+	}
 
 	writeJSON(writer, http.StatusOK, map[string]string{
 		"message": fmt.Sprintf("Login successful for user %q.", username),
@@ -227,9 +232,19 @@ func handleLogout(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user.SessionToken = ""
-	user.CSRFToken = ""
-	store.Users[username] = user
+	sessionCookie, err := req.Cookie(auth.SessionCookieName(username))
+	if err != nil || strings.TrimSpace(sessionCookie.Value) == "" || sessionCookie.Value != user.SessionToken {
+		writeErrorJSON(writer, http.StatusUnauthorized, auth.ErrUnauthorized.Error())
+		return
+	}
+
+	auth.ClearSessionCookies(writer, username)
+
+	if err := storage.ClearSession(username); err != nil {
+		logger.ErrorContext(req.Context(), "clear session in database error", "error", err)
+		writeErrorJSON(writer, http.StatusInternalServerError, "could not clear session")
+		return
+	}
 
 	writeJSON(writer, http.StatusOK, map[string]string{
 		"message": fmt.Sprintf("Logout successful for user %q.", username),
