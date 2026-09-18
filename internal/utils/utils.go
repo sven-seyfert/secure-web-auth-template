@@ -3,7 +3,12 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -23,7 +28,7 @@ func ProjectRoot() string {
 // HashPassword returns a bcrypt hash for the provided plaintext password.
 func HashPassword(password string) (string, error) {
 	if password == "" {
-		return "", fmt.Errorf("password must not be empty")
+		return "", errors.New("password must not be empty")
 	}
 
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -34,7 +39,7 @@ func HashPassword(password string) (string, error) {
 	return string(hashedBytes), nil
 }
 
-// CheckPasswordHash compares a plaintext password to a bcrypt hash.
+// CheckPasswordHash compares a plaintext password against a bcrypt hash.
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
@@ -88,9 +93,10 @@ func ValidateCredentials(username, password string) error {
 	return nil
 }
 
+// GenerateToken generates a cryptographically random token with the requested byte length.
 func GenerateToken(length int) (string, error) {
 	if length <= 0 {
-		return "", fmt.Errorf("token length must be greater than zero")
+		return "", errors.New("token length must be greater than zero")
 	}
 
 	randomBytes := make([]byte, length)
