@@ -97,10 +97,11 @@ func writeErrorJSON(writer http.ResponseWriter, statusCode int, message string) 
 	writeJSON(writer, statusCode, map[string]string{"error": message})
 }
 
-// readCredentials trims and returns the username and password from the request form.
+// readCredentials trims the username for normalization and returns the password unchanged,
+// because leading/trailing spaces are part of the actual password value.
 func readCredentials(req *http.Request) (string, string) {
 	username := strings.TrimSpace(req.FormValue("username"))
-	password := strings.TrimSpace(req.FormValue("password"))
+	password := req.FormValue("password")
 
 	return username, password
 }
