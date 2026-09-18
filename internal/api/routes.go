@@ -173,7 +173,7 @@ func handleLogin(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if user.SessionToken != "" || user.CSRFToken != "" {
+	if user.HasSessionData() && !user.IsSessionExpired() && !user.IsCSRFExpired() {
 		writeJSON(writer, http.StatusConflict, map[string]string{
 			"message": fmt.Sprintf("User %q is already logged in.", username),
 		})
