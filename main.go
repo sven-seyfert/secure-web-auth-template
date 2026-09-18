@@ -14,10 +14,25 @@ func main() {
 
 	staticFileServer := http.FileServer(http.Dir("./web"))
 	mux.Handle("/", staticFileServer)
+	server := newHTTPServer(api.WithSecurityHeaders(mux))
 
 	log.Printf("server listening on http://localhost:8080")
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		log.Fatalf("listen and serve failed: %v", err)
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("listen and serve failed: %v", err)
+		return
+	}
+}
+
+// newHTTPServer configures the application HTTP server with production-style timeouts and limits.
+func newHTTPServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           handler,
+		Addr:              ":8080",
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       2 * time.Minute,
+		MaxHeaderBytes:    1 << 20,
 	}
 }

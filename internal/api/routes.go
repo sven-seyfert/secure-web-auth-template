@@ -14,10 +14,46 @@ import (
 
 // RegisterRoutes registers all API routes on the provided mux.
 func RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/v1/register", requireMethod(http.MethodPost, handleRegister))
-	mux.HandleFunc("/v1/login", requireMethod(http.MethodPost, handleLogin))
-	mux.HandleFunc("/v1/protected", requireMethod(http.MethodPost, requireAuthJSON(handleProtected)))
-	mux.HandleFunc("/v1/logout", requireMethod(http.MethodPost, requireAuthJSON(handleLogout)))
+	mux.HandleFunc("/v1/register", requirePostMethod(handleRegister))
+	mux.HandleFunc("/v1/login", requirePostMethod(handleLogin))
+	mux.HandleFunc("/v1/protected", requirePostMethod(requireAuthJSON(handleProtected)))
+	mux.HandleFunc("/v1/logout", requirePostMethod(requireAuthJSON(handleLogout)))
+}
+
+// WithSecurityHeaders applies a restrictive browser security header set to all requests.
+func WithSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		contentSecurityPolicy := strings.Join([]string{
+			"default-src 'self'",
+			"base-uri 'self'",
+			"object-src 'none'",
+			"frame-ancestors 'none'",
+			"form-action 'self'",
+			"script-src 'self'",
+			"style-src 'self'",
+			"img-src 'self' data:",
+			"connect-src 'self'",
+		}, "; ")
+
+		writer.Header().Set("Content-Security-Policy", contentSecurityPolicy)
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
+		writer.Header().Set("X-Frame-Options", "DENY")
+		writer.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		writer.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		next.ServeHTTP(writer, request)
+	})
+}
+
+// requirePostMethod ensures the request uses POST before calling the next handler.
+func requirePostMethod(nextHandler http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodPost {
+			writeErrorJSON(writer, http.StatusMethodNotAllowed, "invalid request method")
+			return
+		}
+
+		nextHandler(writer, req)
+}
 }
 
 // requireAuthJSON ensures the request is authenticated before calling the next handler.
