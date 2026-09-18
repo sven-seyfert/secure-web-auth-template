@@ -50,8 +50,14 @@ function readCookie(name) {
   return '';
 }
 
+function readUserCookie(username, prefix) {
+  if (!username) return '';
+  return readCookie(`${prefix}_${username}`);
+}
+
 function updateSessionStatus() {
-  const csrfToken = readCookie('csrf_token');
+  const username = appState.username || document.querySelector('#loginForm input[name="username"]')?.value.trim() || '';
+  const csrfToken = username ? readUserCookie(username, 'csrf_token') : '';
   const isLoggedIn = appState.loggedIn && Boolean(csrfToken);
 
   sessionStatus.textContent = isLoggedIn ? 'logged in' : 'logged out';
@@ -60,9 +66,16 @@ function updateSessionStatus() {
   csrfTokenInput.value = csrfToken || '';
 }
 
-function setLoggedInState(loggedIn) {
+function setLoggedInState(loggedIn, username = '') {
   appState.loggedIn = loggedIn;
+  appState.username = loggedIn ? username : '';
   updateSessionStatus();
+}
+
+function getActiveUsername(formSelector) {
+  const input = document.querySelector(formSelector);
+  const typedUsername = input ? input.value.trim() : '';
+  return typedUsername || appState.username || '';
 }
 
 document.querySelectorAll('.tab-button').forEach((button) => {
@@ -79,6 +92,11 @@ document.querySelectorAll('.tab-button').forEach((button) => {
 
 document.getElementById('registerForm').addEventListener('submit', async (event) => {
   event.preventDefault();
+
+  if (!event.target.checkValidity()) {
+    event.target.reportValidity();
+    return;
+  }
 
   const formData = new FormData(event.target);
   const username = (formData.get('username') || '').toString();
@@ -116,8 +134,8 @@ document.getElementById('registerForm').addEventListener('submit', async (event)
 document.getElementById('loginForm').addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  if (appState.loggedIn || readCookie('session_token') || readCookie('csrf_token')) {
-    setResponse('User is already logged in. Please log out before logging in again.', 'error');
+  if (!event.target.checkValidity()) {
+    event.target.reportValidity();
     return;
   }
 
@@ -149,39 +167,57 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
 
     const text = await response.text();
     setResponse(text, response.ok ? 'success' : 'error');
-    setLoggedInState(response.ok);
+    setLoggedInState(response.ok, response.ok ? username.trim() : '');
   } catch (error) {
     setResponse(`Request failed: ${error.message}`, 'error');
-    setLoggedInState(false);
+    setLoggedInState(false, '');
   }
 });
 
 document.getElementById('logoutButton').addEventListener('click', async () => {
-  const username = document.querySelector('#loginForm input[name="username"]').value.trim();
-  const csrfToken = readCookie('csrf_token');
+  const username = getActiveUsername('#loginForm input[name="username"]');
+  const usernameError = validateUsername(username);
+  if (usernameError) {
+    setResponse(usernameError, 'error');
+    return;
+  }
+
+  const csrfToken = readUserCookie(username.trim(), 'csrf_token');
 
   try {
     const response = await fetch('/v1/logout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Csrf-Token': csrfToken },
-      body: new URLSearchParams({ username }).toString(),
+      body: new URLSearchParams({ username: username.trim() }).toString(),
       credentials: 'same-origin',
     });
 
     const text = await response.text();
     setResponse(text, response.ok ? 'success' : 'error');
-    setLoggedInState(false);
+    setLoggedInState(false, '');
   } catch (error) {
     setResponse(`Request failed: ${error.message}`, 'error');
-    setLoggedInState(false);
+    setLoggedInState(false, '');
   }
 });
 
 document.getElementById('protectedForm').addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const username = document.querySelector('#protectedForm input[name="username"]').value.trim();
-  const csrfToken = readCookie('csrf_token');
+  const form = event.target;
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+
+  const username = getActiveUsername('#protectedForm input[name="username"]');
+  const usernameError = validateUsername(username);
+  if (usernameError) {
+    setResponse(usernameError, 'error');
+    return;
+  }
+
+  const csrfToken = readUserCookie(username.trim(), 'csrf_token');
 
   try {
     const response = await fetch('/v1/protected', {
@@ -190,16 +226,16 @@ document.getElementById('protectedForm').addEventListener('submit', async (event
         'Content-Type': 'application/x-www-form-urlencoded',
         'X-Csrf-Token': csrfToken,
       },
-      body: new URLSearchParams({ username }).toString(),
+      body: new URLSearchParams({ username: username.trim() }).toString(),
       credentials: 'same-origin',
     });
 
     const text = await response.text();
     setResponse(text, response.ok ? 'success' : 'error');
-    setLoggedInState(response.ok);
+    setLoggedInState(response.ok, response.ok ? username.trim() : '');
   } catch (error) {
     setResponse(`Request failed: ${error.message}`, 'error');
-    setLoggedInState(false);
+    setLoggedInState(false, '');
   }
 });
 
